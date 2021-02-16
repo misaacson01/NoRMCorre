@@ -1,4 +1,4 @@
-function res = saveastiff(data, path, options)
+function res = saveastiff(data, path, options, imgdescr)
 % options.color
 %   : true or FALSE
 %   : If this is true, third dimension should be 3 and the data is saved as a color image.
@@ -114,7 +114,9 @@ tagstruct.ImageLength = height;
 tagstruct.ImageWidth = width;
 tagstruct.PlanarConfiguration = Tiff.PlanarConfiguration.Chunky; % (RGB RGB,RGB RGB,RGB RGB), http://www.awaresystems.be/imaging/tiff/tifftags/planarconfiguration.html
 % tagstruct.PlanarConfiguration = Tiff.PlanarConfiguration.Separate; % (RRR RRR, GGG GGG, BBB BBB), % http://www.awaresystems.be/imaging/tiff/tifftags/planarconfiguration.html
-
+if nargin>3
+    tagstruct.ImageDescription = imgdescr;
+end
 
 %% Complex number
 % http://www.awaresystems.be/imaging/tiff/tifftags/samplesperpixel.html

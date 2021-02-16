@@ -27,7 +27,6 @@ ds = d;
 Ts = floor(T/tsub);          %reduced number of frames
 Y_ds = Y;
 if ~((ssub == 1) && (tsub == 1))
-    fprintf('starting resampling \n')
     if strcmpi(direction,'space') || strcmpi(direction,'spacetime');
         if ssub~=1;
             ds(1:2) = ceil(d(1:2)/ssub); % do not subsample along z axis
@@ -58,5 +57,5 @@ if ~((ssub == 1) && (tsub == 1))
         end
     end
 else
-    fprintf('No downsampling is performed \n')
+    fprintf('(no downsampling was performed) ')
 end
