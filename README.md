@@ -1,3 +1,9 @@
+## Notes on this fork
+
+This is a fork of the original NoRMCorre repo, inteneded to more easily fit into image processing pipelines. The "draw_ROIs" repo is required to work with these scripts.
+
+
+
 [![Join the chat at https://gitter.im/epnev/ca_source_extraction](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/epnev/ca_source_extraction?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # NoRMCorre: Non-Rigid Motion Correction 
