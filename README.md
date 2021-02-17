@@ -1,10 +1,9 @@
 ## Notes on this fork
 
-This is a fork of the original NoRMCorre repo, inteneded to more easily fit into image processing pipelines. The "draw_ROIs" repo is required to work with these scripts.
+This is a fork of the NoRMCorre repo, intended to more easily fit into S-N Lab image processing pipelines. The "draw_ROIs" repo is required to work with these scripts.
 
 
-
-[![Join the chat at https://gitter.im/epnev/ca_source_extraction](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/epnev/ca_source_extraction?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+## Original readme:
 
 # NoRMCorre: Non-Rigid Motion Correction 
 This package provides a Matlab implementation of the NoRMCorre algorithm [[1]](#ref), and can be used for online piecewise rigid motion correction of 2d (planar) or 3d (volumetric) calcium imaging data. 
