@@ -48,7 +48,7 @@ end
 
 %turn off unnecessary Tiff library warning
 warning('off','MATLAB:imagesci:tiffmexutils:libtiffWarning'); 
-
+warning('off','MATLAB:imageio:tiffmexutils:libtiffWarning'); 
 
 [~,imageFilename,ext] = fileparts(imageName);
 assert(exist(imageName,'file')==2,['Cannot find file "' imageName '"']);
@@ -101,14 +101,13 @@ end
 fprintf([repmat('\b',[1 backspaces+1]) 'done.\n']);
 
 %apply motion correction using normCorre algorithm
-fprintf('Beginning normCorre motion correction...\n');
 normcorre_options = NoRMCorreSetParms('d1',image_size(1),'d2',image_size(2),'grid_size',options.grid_size,'init_batch',options.init_batch,...
                 'overlap_pre',options.overlap_pre,'mot_uf',options.mot_uf,'bin_width',options.bin_width,'max_shift',options.max_shift,...
                 'max_dev',options.max_dev,'us_fac',options.us_fac,'output_type','tif','tiff_filename',saveName);
 [~,~,~,~,~] = normcorre(image_series,normcorre_options);
-fprintf( 'Motion correction complete.\n');
 
 %turn warning back on
 warning('on','MATLAB:imagesci:tiffmexutils:libtiffWarning');
+warning('on','MATLAB:imageio:tiffmexutils:libtiffWarning');
 
 end

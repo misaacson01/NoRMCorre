@@ -15,8 +15,9 @@ function [data, tagstruct, channels] = readtiffframe(filename, frameNum)
 
 
 %% Read specified frame of tiff file
-%turn unnecessary Tiff library warning off
+%turn unnecessary Tiff library warnings off
 warning('off','MATLAB:imagesci:tiffmexutils:libtiffWarning')
+warning('off','MATLAB:imageio:tiffmexutils:libtiffWarning')
 t = Tiff(filename,'r');
 setDirectory(t,frameNum);
 data = imread(filename,frameNum);
@@ -54,7 +55,8 @@ end
 
 %% close Tiff file
 t.close();
-%turn warning back on
+%turn warnings back on
 warning('on','MATLAB:imagesci:tiffmexutils:libtiffWarning')
+warning('on','MATLAB:imageio:tiffmexutils:libtiffWarning')
 
 end
