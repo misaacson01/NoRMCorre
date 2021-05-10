@@ -106,8 +106,5 @@ normcorre_options = NoRMCorreSetParms('d1',image_size(1),'d2',image_size(2),'gri
                 'max_dev',options.max_dev,'us_fac',options.us_fac,'output_type','tif','tiff_filename',saveName);
 [~,~,~,~,~] = normcorre(image_series,normcorre_options);
 
-%turn warning back on
-warning('on','MATLAB:imagesci:tiffmexutils:libtiffWarning');
-warning('on','MATLAB:imageio:tiffmexutils:libtiffWarning');
 
 end

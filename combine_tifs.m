@@ -62,7 +62,9 @@ for n = 1:numTifNames
         end
         
         %load every image frame and save into a new, single tiff stack
-        fprintf(['Combining ' savestr ' from ' tifNames{n} ', ' num2str(num_tifs) ' tif files... (1)']);
+        fprintf('%s',['Folder: '  tifNames{n}]);
+        fprintf('\n');
+        fprintf(['Combining ' savestr ' from ' num2str(num_tifs) ' tif files... (1)']);
         backspaces = 2;
         for t = 1:num_tifs
             fprintf(1,[repmat('\b',[1 backspaces]) num2str(t) ')']);
@@ -96,7 +98,9 @@ for n = 1:numTifNames
     else %for individual .tif files
 
         %print names of files to be combined
-        fprintf(['Combining ' savestr ' from ' tifNames{n} '... ']);
+        fprintf('%s',['File: '  tifNames{n}]);
+        fprintf('\n');
+        fprintf(['Combining ' savestr '... ']);
         
         curFullName = tifNames{n};
         curTiff = Tiff(curFullName,'r');
