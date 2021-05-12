@@ -1,9 +1,17 @@
 ## Notes on this fork
 
-This is a fork of the NoRMCorre repo, intended to more easily fit into S-N Lab image processing pipelines. The "draw_ROIs" repo is required to work with these scripts.
+This is a fork of the NoRMCorre repo, intended to more easily fit into S-N Lab image processing pipelines. The "draw_ROIs" repo is required to work with some of these scripts.
+
+To just apply the NoRMCorre motion correction process to an image file, call the "run_normcorre" script from MATLAB with the full image filename and a save filename, like this:
+run_normcorre('imageName','c:\unstabilized.tif','saveDir','c:\stabilized.tif');
+
+To process ROIs in an unstabilized image file (or a series of files and/or folders of files), open the "snlab_image_processing.m" file in MATLAB and specify the filename(s) of the images to be processed as well as the image channel(s) (for 1-4 channel image series, output from scanimage) to process. (e.g. for processing gcamp imaging from snlab setup 3, channel 3 is ideal). This script will then run the following image processing pipeline:
+1) If multiple files and/or folders of files are included, they will be combined into a single file, only combining the specified image channels.
+2) The NoRMCorre script will be applied to the combined image file.
+3) The stabilized image file will be opened in the "draw_ROIs" tool (required dependency, available here: https://github.com/sn-lab/draw_ROIs). Using this GUI, draw polygons around all regions of interest, then save/exit when done. This tool will create files (.mat, .png, and/or .svg) of all ROIs drawn and timeseries of the mean brightness within each ROI. 
 
 
-## Original readme:
+## Original readme for the NoRMCorre repo:
 
 # NoRMCorre: Non-Rigid Motion Correction 
 This package provides a Matlab implementation of the NoRMCorre algorithm [[1]](#ref), and can be used for online piecewise rigid motion correction of 2d (planar) or 3d (volumetric) calcium imaging data. 
