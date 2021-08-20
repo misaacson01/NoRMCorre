@@ -1,4 +1,4 @@
-function [combined_filename, num_frames, fps] = combine_tifs(tifNames, channels_to_save)
+function [combined_filenames, num_frames, fps] = combine_tifs(tifNames, channels_to_save)
 % FUNCTION combined_filename = combine_tifs(tifNames, channels_to_save)
 %
 % combines all .tif files (and folders of files) into a single .tif image 
@@ -24,30 +24,40 @@ numTifNames = length(tifNames);
 for n = 1:numTifNames
     assert(exist(tifNames{n},'dir')==7||exist(tifNames{n},'file')==2,['Cannot find "' tifNames{n} '"']);
 end
-
-%set a filename for the combined file
-[combined_dir, ~, ~] = fileparts(tifNames{1});
-combined_filename = fullfile(combined_dir,'combined_images.tif'); %name for combined files
 num_frames = nan(numTifNames,1);
 fps = nan(numTifNames,1);
-assert(~(exist(combined_filename,'file')==2),'combined filename already exists');
 
 %check/set optional 2nd input
 if nargin<2
     channels_to_save = [1 2 3 4];
 end
-assert(channels_to_save>0 & channels_to_save<5 & all(mod(channels_to_save,1)==0),...
+assert(all(channels_to_save>0) & all(channels_to_save<5) & all(mod(channels_to_save,1)==0),...
     'channels_to_save must be integers from 1-4')
 channels_to_save = sort(channels_to_save); %make sure it's in ascending order
 options.savechannels = [0 0 0 0]; %convert save channels to binary array
 options.savechannels(channels_to_save) = 1;
-if length(channels_to_save)==1
+num_channels_to_save = length(channels_to_save);
+if num_channels_to_save==1
     savestr = ['channel ' num2str(channels_to_save)];
 else
     savestr = ['channels [' num2str(channels_to_save) ']' ];
 end
 options.append = false; 
 
+%set filename(s) for the combined file(s)
+[combined_dir, ~, ~] = fileparts(tifNames{1});
+combined_filename = fullfile(combined_dir,'combined_images'); %name for combined files
+if num_channels_to_save==1
+    combined_filenames{1} = [combined_filename '.tif'];
+    assert(~(exist(combined_filenames{1},'file')==2),'combined filename already exists');
+else
+    combined_filenames = cell(num_channels_to_save,1);
+    for i = 1:num_channels_to_save
+        combined_filenames{i} = [combined_filename '_ch' num2str(channels_to_save(i)) '.tif'];
+        assert(~(exist(combined_filenames{i},'file')==2),'combined filename already exists');
+    end
+end
+append = zeros(1,num_channels_to_save);
 
 %% loop for all filenames/folder to combine all .tif files
 for n = 1:numTifNames
@@ -84,9 +94,11 @@ for n = 1:numTifNames
             for f = 1:num_frames(n,t)
                 cur_channel = channels(mod(f-1,length(channels))+1);
                 if any(channels_to_save==cur_channel)
+                    s = find(channels_to_save==cur_channel);
                     [data, tagstruct, ~] = readtiffframe(curFullName, f);
-                    savetiffframe(data,combined_filename,tagstruct,options);
-                    if options.append == false
+                    savetiffframe(data,combined_filenames{s},tagstruct,options);
+                    if append(s)==0
+                        append(s) = 1;
                         options.append = true; %after first saved frame, append the rest
                     end
                 end
@@ -113,9 +125,11 @@ for n = 1:numTifNames
         for f = 1:num_frames(n,1)
             cur_channel = channels(mod(f-1,length(channels))+1);
             if any(channels_to_save==cur_channel)
+                s = find(channels_to_save==cur_channel);
                 [data, tagstruct, ~] = readtiffframe(curFullName, f);
-                savetiffframe(data,combined_filename,tagstruct,options);
-                if options.append == false
+                savetiffframe(data,combined_filenames{s},tagstruct,options);
+                if append(s)==0
+                    append(s) = 1;
                     options.append = true; %after first saved frame, append the rest
                 end
             end
