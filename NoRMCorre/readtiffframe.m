@@ -50,7 +50,7 @@ try
         end
     end
 catch
-    error('Cannot retrieve ImageDescription from tiff header')
+    channels(1) = 1;
 end
 
 %% close Tiff file

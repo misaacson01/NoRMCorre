@@ -2,8 +2,9 @@ clear all
 %recommended: start by running each section one at a time
 
 %% set file path of tif stack(s) or folder(s) of sequential tif images/stacks
-tifNames{1} = 'C:\Users\Matthew\Documents\Schaffer-Nishimura Lab\Visual Stimulation\Data\21-04-29 viral spatial\spatialtuning\'; 
-channels_to_save = 3; %set image channel (for multi-channel image series)
+% tifNames{1} = 'C:\Users\Matthew\Documents\Schaffer-Nishimura Lab\Visual Stimulation\Data\21-04-29 viral spatial\spatialtuning\'; 
+tifNames{1} = 'C:\Users\misaa\Desktop\Laurie\test2_MouseK7-LL-F_shielding_mDlxYFP_hSynRedQ\chanB';
+channels_to_save = 1; %3;%set image channel (for multi-channel image series)
 
 
 %% combine multiple tif files and folders into a single image file (if applicable)
