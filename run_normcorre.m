@@ -1,4 +1,4 @@
-function saveName = run_normcorre(varargin)
+function [saveName, shifts, col_shift, options] = run_normcorre(varargin)
 % FUNCTION saveName = run_normcorre(varargin)
 %
 % Reads a .tif file and saves a motion-stabilized version
@@ -33,6 +33,8 @@ if ~isempty(varargin)
                 saveDir = varargin{i+1};
             case 'channel'
                 channel = varargin{i+1};
+            case 'numChannels'
+                num_channels = varargin{i+1};
             otherwise
                 error('Input parameter name not recognized')
         end
@@ -58,11 +60,13 @@ assert(strcmp(ext,'.tif'),'Source must be a .tif file')
 %get image info using Matlab Tiff library
 t = Tiff(imageName,'r');
 image_size = [getTag(t,'ImageLength') getTag(t,'ImageWidth')];
-saved_channels = [read_tiffstate(t,'savingChannel1') read_tiffstate(t,'savingChannel2') ...
-    read_tiffstate(t,'savingChannel3') read_tiffstate(t,'savingChannel4')];
-num_channels = nansum(saved_channels);
-if num_channels==0 %if savedchannels cannot be read, read all frames
-    num_channels = 1; 
+if ~exist('num_channels','var')
+    saved_channels = [read_tiffstate(t,'savingChannel1') read_tiffstate(t,'savingChannel2') ...
+        read_tiffstate(t,'savingChannel3') read_tiffstate(t,'savingChannel4')];
+    num_channels = nansum(saved_channels);
+    if num_channels==0 %if savedchannels cannot be read, read all frames
+        num_channels = 1; 
+    end
 end
 info = imfinfo(imageName);
 num_images = length(info);
@@ -104,7 +108,7 @@ fprintf([repmat('\b',[1 backspaces+1]) 'done.\n']);
 normcorre_options = NoRMCorreSetParms('d1',image_size(1),'d2',image_size(2),'grid_size',options.grid_size,'init_batch',options.init_batch,...
                 'overlap_pre',options.overlap_pre,'mot_uf',options.mot_uf,'bin_width',options.bin_width,'max_shift',options.max_shift,...
                 'max_dev',options.max_dev,'us_fac',options.us_fac,'output_type','tif','tiff_filename',saveName);
-[~,~,~,~,~] = normcorre(image_series,normcorre_options);
+[~,shifts,~,options,col_shift] = normcorre(image_series,normcorre_options);
 
 
 end
