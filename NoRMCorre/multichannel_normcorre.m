@@ -1,4 +1,4 @@
-function [M_final,shifts,template,options,col_shift] = multichannel_normcorre(Y,options,channel_options,template)
+function [status, M_final,shifts,template,options,col_shift] = multichannel_normcorre(Y,options,channel_options,template)
 
 % online motion correction through DFT subpixel registration
 % Based on the dftregistration.m function from Manuel Guizar and Jim Fienup
@@ -20,6 +20,7 @@ function [M_final,shifts,template,options,col_shift] = multichannel_normcorre(Y,
 warning('off','MATLAB:imagesci:tiffmexutils:libtiffWarning'); 
 warning('off','MATLAB:imageio:tiffmexutils:libtiffWarning'); 
 warning('off','imageio:tiffmexutils:libtiffWarning');
+status = 'starting';
 
 %% first determine filetype
 %number of dimensions
@@ -58,6 +59,7 @@ sizY = sizY(1:2);
 Yt_ac = zeros([sizY nch]);
 Mf_ac = zeros([sizY nch]);
 Mf_ac_mean = zeros([sizY nch]);
+Mf_ac_max = zeros([sizY nch 2]); %4th dimension contains current max and next frame
 
 
 %% set default parameters if not present
@@ -98,7 +100,7 @@ if strcmpi(options.boundary,'nan')
 else
     fill_value = add_value;
 end
-assert(~use_parallel,'multichannel registration doesn''t support use_parallel yet')
+assert(~use_parallel,'multichannel registration doesn''t support "use_parallel"')
 
 %% first check for offset due to bi-directional scanning
 if options.correct_bidir && isempty(options.col_shift)
@@ -116,6 +118,7 @@ if col_shift
         if print_msg; fprintf('Cubic shifts will be applied. \n'); end
     end
 end
+assert(strcmpi(options.shifts_method,'cubic'),'multichannel registration only supports the "cubic" shifts_method')
 
 
 %% read initial batch and compute template
@@ -489,6 +492,10 @@ for it = 1:iter %loop for iterations
         
         %recalculate mean projections
         Mf_ac_mean = Mf_ac_mean*((t-1)/t) + Mf_ac/t;
+        
+        %recalculate max projections
+        Mf_ac_max(:,:,:,2) = Mf_ac; %put new frame
+        Mf_ac_max(:,:,:,1) = max(Mf_ac_max,[],4,'omitnan');
             
         if ~strcmpi(options.output_type,'mat')
             rem_mem = rem(t,options.mem_batch_size);
@@ -518,14 +525,45 @@ for it = 1:iter %loop for iterations
                 end
             case {'tif','tiff'}
                 if rem_mem == options.mem_batch_size || t == T
+                    %TO-DO: if this is using a supplied template, calculate 
+                    %2D correlation coefficient to see if it is working 
+                    %well enough
+                    if strcmp(status,'starting')
+                        switch pr
+                            case 'mean'
+                                match_to_template = mean(mean(mem_buffer_ac(:,:,1:rem_mem,chsh),3),4);
+                            case 'max'
+                                match_to_template = max(mean(mem_buffer_ac(:,:,1:rem_mem,chsh),3),[],4);
+                        end
+                        R = corr2(match_to_template,template_in);
+                        if R<0.9
+                            answer = input(['Images registered so far are not well correlated to the template (R=' num2str(R) '). Continue anyway? (y/n): '],'s');
+                            if strncmpi(answer,'n',1)
+                                status = 'bad template - cancel';
+                                return;
+                            else
+                                status = 'bad template - proceed';
+                            end
+                        else
+                            status = 'in progress';
+                        end
+                    end
+                            
                     for c = 1:nch %save all motion-corrected channels in separate files
                         curfullfile = fullfile(savepath,['CH' num2str(c) '_' curname curext]);
                         saveastiff(cast(mem_buffer_ac(:,:,1:rem_mem,c),data_type),curfullfile,opts_tiff);
                     end
                     if t==T
-                        for c = 1:nch %save mean projections
+                        for c = 1:nch %save mean and max projections
                             curfullfile = fullfile(savepath,['AVG_CH' num2str(c) '_' curname curext]);
                             saveastiff(cast(Mf_ac_mean(:,:,c),data_type),curfullfile,opts_tiff);
+                            
+                            curfullfile = fullfile(savepath,['MAX_CH' num2str(c) '_' curname curext]);
+                            saveastiff(cast(Mf_ac_max(:,:,c,1),data_type),curfullfile,opts_tiff);
+                            
+                            Mf_change = Mf_ac_max(:,:,c,1) - Mf_ac_mean(:,:,c);
+                            curfullfile = fullfile(savepath,['MAX_SUB_AVG_CH' num2str(c) '_' curname curext]);
+                            saveastiff(cast(Mf_change,data_type),curfullfile,opts_tiff);
                         end
                     end
                     %to save all channels in one file: 
@@ -533,36 +571,39 @@ for it = 1:iter %loop for iterations
                 end                
         end
         
-        if mod(t,bin_width) == 0 && upd_template
+        if mod(t,bin_width) == 0
             if print_msg
                 str=[num2str(t), ' out of ', num2str(T), ' frames registered, iteration ', num2str(it), ' out of ', num2str(iter), '..'];
                 refreshdisp(str, prevstr, t);
                 prevstr=str; 
                 %fprintf('%i out of %i frames registered, iteration %i out of %i \n',t,T,it,iter)
             end
-            cnt_buf = cnt_buf + 1;                
-            if strcmpi(method{2},'mean')
-                new_temp = cellfun(@(x) nanmean(x,nd+1), buffer, 'UniformOutput',false);
-            elseif strcmpi(method{2},'median');
-                new_temp = cellfun(@(x) nanmedian(x,nd+1), buffer, 'UniformOutput', false);
-            end
-            if strcmpi(method{1},'mean')
-                cnt = t/bin_width + 1;
-                template = cellfun(@plus, cellfun(@(x) x*(cnt-1)/cnt, template,'un',0), cellfun(@(x) x*1/cnt, new_temp,'un',0), 'un',0);
-            elseif strcmpi(method{1},'median');
-                if cnt_buf <= buffer_width
-                    if nd == 2; buffer_med(:,:,cnt_buf) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
-                    if nd == 3; buffer_med(:,:,:,cnt_buf) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
-                else
-                    buffer_med = circshift(buffer_med,[zeros(1,nd),-1]);
-                    if nd == 2; buffer_med(:,:,buffer_width) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
-                    if nd == 3; buffer_med(:,:,:,buffer_width) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
+            
+            if upd_template
+                cnt_buf = cnt_buf + 1;                
+                if strcmpi(method{2},'mean')
+                    new_temp = cellfun(@(x) nanmean(x,nd+1), buffer, 'UniformOutput',false);
+                elseif strcmpi(method{2},'median')
+                    new_temp = cellfun(@(x) nanmedian(x,nd+1), buffer, 'UniformOutput', false);
                 end
-                template = mat2cell_ov(nanmedian(buffer_med,nd+1),xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY);
+                if strcmpi(method{1},'mean')
+                    cnt = t/bin_width + 1;
+                    template = cellfun(@plus, cellfun(@(x) x*(cnt-1)/cnt, template,'un',0), cellfun(@(x) x*1/cnt, new_temp,'un',0), 'un',0);
+                elseif strcmpi(method{1},'median')
+                    if cnt_buf <= buffer_width
+                        if nd == 2; buffer_med(:,:,cnt_buf) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
+                        if nd == 3; buffer_med(:,:,:,cnt_buf) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
+                    else
+                        buffer_med = circshift(buffer_med,[zeros(1,nd),-1]);
+                        if nd == 2; buffer_med(:,:,buffer_width) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
+                        if nd == 3; buffer_med(:,:,:,buffer_width) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
+                    end
+                    template = mat2cell_ov(nanmedian(buffer_med,nd+1),xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY);
+                end
+                fftTemp = cellfun(@fftn, template, 'un',0);
+                temp_mat = cell2mat_ov(template,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY);
+                fftTempMat = fftn(temp_mat);
             end
-            fftTemp = cellfun(@fftn, template, 'un',0);
-            temp_mat = cell2mat_ov(template,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY);
-            fftTempMat = fftn(temp_mat);
         end
         
         if plot_flag && mod(t,1) == 0
@@ -596,3 +637,5 @@ for it = 1:iter %loop for iterations
     maxNumCompThreads('automatic');
     if print_msg; fprintf('done. \n'); end
 end
+
+status = 'success';
