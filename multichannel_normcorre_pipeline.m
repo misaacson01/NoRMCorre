@@ -10,7 +10,7 @@ channel_options.chsh = [2 3 4]; %channels to use for registering shifts
 channel_options.pr = 'max'; %projection type to use across channels
 
 %perform multichannel normcorre motion correction and create a new template
-[status, templateName] = run_multichannel_normcorre('imageName',imageName,...
+[status, templateName, ~] = run_multichannel_normcorre('imageName',imageName,...
     'channelOptions',channel_options);
 
 
@@ -28,7 +28,7 @@ channel_options.pr = 'max'; %projection type to use across channels
 
 %perform multichannel normcorre motion correction on each file
 for i = 1:length(imageNames)
-    [status, ~] = run_multichannel_normcorre('imageName',imageNames{i},...
+    [status, ~, ~] = run_multichannel_normcorre('imageName',imageNames{i},...
         'channelOptions',channel_options,'templateName',templateName);
 end
 
@@ -39,24 +39,62 @@ template1 = 'TEMPLATE_920_00001';
 imageFolder2 = 'C:\Users\misaa\Desktop\22-01-14 4color amazing data\Visual Cortex\MC dirtuning';
 template2 = 'TEMPLATE_dirtuning';
 
+%register template2 to template1 with imregtform (better for big motion)
+template1Name = fullfile(imageFolder1,[template1 '.tif']);
+template2Name = fullfile(imageFolder2,[template2 '.tif']);
 [optimizer, metric] = imregconfig('multimodal');
-fixed = imread(fullfile(imageFolder1,[template1 '.tif']));
-moving = imread(fullfile(imageFolder2,[template2 '.tif']));
-tform = imregtform(moving,fixed,'affine',optimizer,metric);
-movingRegistered = imwarp(moving,tform,'OutputView',imref2d(size(fixed)));
-kept_mask = imwarp(ones(size(fixed)),tform,'OutputView',imref2d(size(fixed)));
-fixed_masked = fixed; fixed_masked(~kept_mask) = 0;
+fixed = imread(template1Name);
+moving = imread(template2Name);
+imr_tform = imregtform(moving,fixed,'affine',optimizer,metric);
+movingRegistered = imwarp(moving,imr_tform,'OutputView',imref2d(size(fixed)));
+
+%get correlation between registered template2 and template1
+kept_mask = imwarp(ones(size(fixed)),imr_tform,'OutputView',imref2d(size(fixed)));
+fixed_masked = fixed; 
+fixed_masked(~kept_mask) = 0;
 R = corr2(fixed,moving);
 R2 = corr2(fixed_masked,movingRegistered);
-answer = input(['Correlation improved from R=' num2str(R) ' to R=' num2str(R2) ', register the entire folder? (y/n): '],'s');
+
+%save registered template2
+template2Name_reg = fullfile(imageFolder1,[template2 '_reg2_' template1 '.tif']);
+opts_tiff.append = true;
+opts_tiff.big = true;
+opts_tiff.message = false;
+saveastiff(movingRegistered,template2Name_reg,opts_tiff);  
+
+%register template2 a 2nd time using normcorre (better for small, in-frame motion)
+channel_options.nch = 1;
+channel_options.chsh = 1;
+channel_options.pr = 'max';
+channel_options.save = false;
+[status, ~, nrm_tform] = run_multichannel_normcorre('imageName',template2Name_reg,...
+        'channelOptions',channel_options,'templateName',template1Name);
+movingRegistered2 = imwarp(movingRegistered,nrm_tform,'cubic','FillValues',0);
+kept_mask = imwarp(kept_mask,nrm_tform,'cubic','FillValues',0);
+fixed_masked2 = fixed; 
+fixed_masked2(~kept_mask) = 0;
+R3 = corr2(fixed_masked,movingRegistered2);
+figure()
+subplot(2,2,1)
+image(fixed_masked)
+subplot(2,2,2)
+image(fixed_masked2)
+subplot(2,2,3)
+image(movingRegistered)
+subplot(2,2,4)
+image(movingRegistered2)
+
+%as user to continue if template2 could be well aligned to template1
+if R2>R3
+    answer = input(['Correlation improved from R=' num2str(R) ' to R=' num2str(R2) ' using imregtform only, register the entire folder this way? (y/n): '],'s');
+else
+    answer = input(['Correlation improved from R=' num2str(R) ' to R=' num2str(R3) ' using both imregtform and normcorre, register the entire folder this way? (y/n): '],'s');
+end
 if strncmpi(answer,'y',1)
     %warp every image file in folder2
     files2 = dir(fullfile(imageFolder2,'*.tif'));
     numFiles = length(files2);
     prevstr = [];
-    opts_tiff.append = true;
-    opts_tiff.big = true;
-    opts_tiff.message = false;
     saveFolder = fullfile(imageFolder2,['registered to ' template1]);
     if isfolder(saveFolder)
         error(['"' saveFolder '" folder already exists'])
@@ -66,7 +104,10 @@ if strncmpi(answer,'y',1)
     for f = 1:numFiles
         images = read_file(fullfile(imageFolder2,files2(f).name));
         for i = 1:size(images,3)
-            images(:,:,i) = imwarp(images(:,:,i),tform,'OutputView',imref2d(size(fixed)));
+            images(:,:,i) = imwarp(images(:,:,i),imr_tform,'OutputView',imref2d(size(fixed)));
+            if R3>R2
+                images(:,:,i) = imwarp(images(:,:,i),nrm_tform,'cubic','FillValues',0);
+            end
         end
         saveastiff(images,fullfile(saveFolder,files2(f).name),opts_tiff);       
         str=[num2str(f), ' out of ', num2str(numFiles), ' files warped to template1...'];

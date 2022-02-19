@@ -1,4 +1,4 @@
-function [status, templateName] = run_multichannel_normcorre(varargin)
+function [status, templateName, out_tform] = run_multichannel_normcorre(varargin)
 % FUNCTION saveName = run_multichannel_normcorre(varargin)
 %
 % Processes multiple, multi-channel tif stacks through the normcorre motion
@@ -53,7 +53,12 @@ if ~exist('channel_options','var')
     channel_options.nch = 4; %number of channels in the source file
     channel_options.chsh = [1 2 3 4]; %channels to use for registering shifts
     channel_options.pr = 'max'; %projection type to use across channels
+    channel_options.save = true; %whether to save the registered images or not (false just returns the last transform)
 end
+if ~isfield('channel_options','save')
+    channel_options.save = true;
+end
+
 
 %check validity of inputs
 [imagePathname,imageFilename,ext] = fileparts(imageName);
@@ -86,7 +91,7 @@ end
 
 %perform motion correction using a supplied template
 if use_supplied_template
-    [status,~,~,~,~,~] = multichannel_normcorre(imageName,normcorre_options,channel_options,template);
+    [status,~,~,~,~,~,out_tform] = multichannel_normcorre(imageName,normcorre_options,channel_options,template);
     templateName = '';
     
     %check if the supplied template was good enough for registration
@@ -103,7 +108,7 @@ end
 
 %perform motion correction, creating a new template in the process
 if ~use_supplied_template
-    [status,~,~,template,~,~] = multichannel_normcorre(imageName,normcorre_options,channel_options);
+    [status,~,~,template,~,~,out_tform] = multichannel_normcorre(imageName,normcorre_options,channel_options);
     
     %if registration was successful, save the newly created template
     if strcmp(status,'success')

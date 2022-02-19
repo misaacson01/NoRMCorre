@@ -1,4 +1,4 @@
-function [status, M_final,shifts,template,options,col_shift] = multichannel_normcorre(Y,options,channel_options,template)
+function [status, M_final,shifts,template,options,col_shift,out_tform] = multichannel_normcorre(Y,options,channel_options,template)
 
 % online motion correction through DFT subpixel registration
 % Based on the dftregistration.m function from Manuel Guizar and Jim Fienup
@@ -29,6 +29,9 @@ nd = 2 + (options.d3 > 1); %max(length(sizY)-1,2);    % determine whether imagin
 nch = channel_options.nch; %# of channels
 chsh = channel_options.chsh; %channels for calculating shifts
 pr = channel_options.pr; %projection type for combining multiple "chsh" channels
+if ~channel_options.save
+    options.output_type = 'nosave';
+end
 
 if isa(Y,'char')
     [~,~,ext] = fileparts(Y);
@@ -255,7 +258,9 @@ switch lower(options.output_type)
         opts_tiff.message = false;
         if nd == 3
             error('Saving volumetric tiff stacks is currently not supported. Use a different filetype');
-        end        
+        end  
+    case 'nosave'
+        
     otherwise
         error('This filetype is currently not supported')
 end   
@@ -477,10 +482,11 @@ for it = 1:iter %loop for iterations
                 else %for 2D images -- keeping it simple I see
                     shifts_up = imresize(shifts_temp,[options.d1,options.d2]);
                     shifts_up(2:2:end,:,2) = shifts_up(2:2:end,:,2) + col_shift;
-                    Mf = imwarp(Yt,-cat(3,shifts_up(:,:,2),shifts_up(:,:,1)),options.shifts_method,'FillValues',fill_value);
+                    out_tform = -cat(3,shifts_up(:,:,2),shifts_up(:,:,1));
+                    Mf = imwarp(Yt,out_tform,options.shifts_method,'FillValues',fill_value);
                     Mf_ac = repmat(Mf,[1 1 nch]);
                     for c = 1:nch 
-                        Mf_ac(:,:,c) = imwarp(Yt_ac(:,:,c),-cat(3,shifts_up(:,:,2),shifts_up(:,:,1)),options.shifts_method,'FillValues',fill_value);
+                        Mf_ac(:,:,c) = imwarp(Yt_ac(:,:,c),out_tform,options.shifts_method,'FillValues',fill_value);
                     end
                 end    
              
@@ -568,7 +574,9 @@ for it = 1:iter %loop for iterations
                     end
                     %to save all channels in one file: 
                     %saveastiff(cast(reshape(permute(mem_buffer_ac(:,:,1:rem_mem,:),[1 2 4 3]),[mb_size(1:2) prod(mb_size(3:4)]),data_type),options.tiff_filename,opts_tiff);
-                end                
+                end
+            case 'nosave'
+                
         end
         
         if mod(t,bin_width) == 0
