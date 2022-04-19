@@ -1,13 +1,11 @@
 %% register a multichannel image series, creating a new template
 %set primary image filename (used to create a template during motion correction)
-% imageName = 'C:\Users\misaa\Desktop\22-01-14 4color amazing data\Visual Cortex\920_00001x.tif';
-imageName = 'C:\Users\misaa\Desktop\22-01-14 4color amazing data\Visual Cortex\1030_00001.tif';
-
+imageName = 'C:\Users\misaa\Desktop\framerate test\spont 13fps002.tif';
 
 %settings for current image
 channel_options.nch = 4; %number of channels in the source file
 channel_options.chsh = [2 3 4]; %channels to use for registering shifts
-channel_options.pr = 'max'; %projection type to use across channels
+channel_options.pr = 'max'; %projection type to use across channels ('max' or 'mean')
 
 %perform multichannel normcorre motion correction and create a new template
 [status, templateName, ~] = run_multichannel_normcorre('imageName',imageName,...
@@ -16,8 +14,6 @@ channel_options.pr = 'max'; %projection type to use across channels
 
 %% register additional multichannel image series to the generated template
 %set additional filenames to register to the new template
-clear imageNames
-% imageNames{1} = 'C:\Users\misaa\Desktop\22-01-14 4color amazing data\Visual Cortex\1030_00001.tif';
 imageNames{1} = 'C:\Users\misaa\Desktop\22-01-14 4color amazing data\Visual Cortex\dirtuning.tif';
 templateName = 'C:\Users\misaa\Desktop\22-01-14 4color amazing data\Visual Cortex\MC 920_00001\TEMPLATE_920_00001.tif';
 
@@ -84,7 +80,7 @@ image(movingRegistered)
 subplot(2,2,4)
 image(movingRegistered2)
 
-%as user to continue if template2 could be well aligned to template1
+%ask user to continue if template2 could be well aligned to template1
 if R2>R3
     answer = input(['Correlation improved from R=' num2str(R) ' to R=' num2str(R2) ' using imregtform only, register the entire folder this way? (y/n): '],'s');
 else
