@@ -566,10 +566,6 @@ for it = 1:iter %loop for iterations
                             
                             curfullfile = fullfile(savepath,['MAX_CH' num2str(c) '_' curname curext]);
                             saveastiff(cast(Mf_ac_max(:,:,c,1),data_type),curfullfile,opts_tiff);
-                            
-                            Mf_change = Mf_ac_max(:,:,c,1) - Mf_ac_mean(:,:,c);
-                            curfullfile = fullfile(savepath,['MAX_SUB_AVG_CH' num2str(c) '_' curname curext]);
-                            saveastiff(cast(Mf_change,data_type),curfullfile,opts_tiff);
                         end
                     end
                     %to save all channels in one file: 
