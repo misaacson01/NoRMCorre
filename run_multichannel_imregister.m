@@ -195,7 +195,7 @@ fprintf('done.\n');
 %% save registered images
 if channel_options.save
     fprintf('Saving files... '); 
-    savepath = fullfile(imagePathname,['IMR ' imageFilename]);
+    savepath = fullfile(imagePathname,['MIMR ' imageFilename]);
     if ~(exist(savepath,'dir')==7)
         mkdir(savepath);
     end
