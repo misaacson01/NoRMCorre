@@ -1,5 +1,5 @@
 function [status, templateName, out_tform] = run_multichannel_normcorre(varargin)
-% FUNCTION saveName = run_multichannel_normcorre(varargin)
+% FUNCTION [status, templateName, out_tform] = run_multichannel_normcorre(varargin)
 %
 % Processes multiple, multi-channel tif stacks through the normcorre motion
 % correction scripts
@@ -10,10 +10,12 @@ function [status, templateName, out_tform] = run_multichannel_normcorre(varargin
 % 'channel': image channel of source video to stabilize (for mult-channel stacks)
 %
 % Output:
-% saveName: directory/filename of stabilized video
+% status: text description of results (e.g. "success" or "bad template"
+% templateName = directory/filename of the template generated from motion correction
+% out_tform = transformation used to stabilize the frame
 %
 % example:
-% stabilized_filename = run_normcorre('sourceName','C:\image.tif','saveDir','C:\stabilized\','channel',2)
+% run_multichannel_normcorre('imageName','C:\image.tif','saveDir','C:\stabilized\','channel',2)
 
 %options for normcorre algorithm
 options.grid_size = [32,32];
@@ -58,7 +60,6 @@ end
 if ~isfield('channel_options','save')
     channel_options.save = true;
 end
-
 
 %check validity of inputs
 [imagePathname,imageFilename,ext] = fileparts(imageName);
