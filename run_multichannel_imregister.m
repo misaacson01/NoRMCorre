@@ -10,9 +10,9 @@ function [status, templateName, tforms, corrcoefs] = run_multichannel_imregister
 %   channel_options.nch: number of channels in the source file
 %   channel_options.chsh: channels to use for calculating shifts (e.g. [2 3 4])
 %   channel_options.chrg: channels to register (e.g. [2 3 4])
+%   channel_options.chsv: channels to save (e.g. [] for none, [1 2 3 4] for all)
 %   channel_options.pr: projection type to use across channels ('max' or 'mean')
-%   channel_options.save: whether to save the registered images, or just get the tforms (true or false)
-%
+%   
 % Output:
 % status: text description of results (e.g. "success" or "bad template")
 % templateName: directory/filename of the template generated from motion correction
@@ -38,14 +38,6 @@ if ~isempty(varargin)
     end
 end
 
-%settings for current image
-channel_options.nch = 4; %number of channels in the source file
-channel_options.chsh = [1 2 3 4]; %channels to use for calculating shifts (e.g. [2 3 4])
-channel_options.chrg = [1 2 3 4]; %channels to register (e.g. [2 3 4])
-channel_options.chsv = [1 2 3 4]; %channels to save (e.g. [1 2 3 4])
-channel_options.pr = 'max'; %projection type to use across channels ('max' or 'mean')
-channel_options.save = true; %whether to save the registered images, or just get the tforms (true or false)
-
 %set input defaults
 if ~exist('imageName','var')
     [imageFilename, imagePathname, ~] = uigetfile('*.tif','Select the .tif file to be motion stabilized');
@@ -55,11 +47,8 @@ if ~exist('channel_options','var')
     channel_options.nch = 4; %number of channels in the source file
     channel_options.chsh = [1 2 3 4]; %channels to use for registering shifts
     channel_options.chrg = [1 2 3 4]; %channels to register
+    channel_options.chsv = [1 2 3 4]; %channels to save
     channel_options.pr = 'max'; %projection type to use across channels
-    channel_options.save = true; %whether to save the registered images or not (false just returns the last transform)
-end
-if ~isfield('channel_options','save')
-    channel_options.save = true;
 end
 
 %check validity of inputs
@@ -183,17 +172,18 @@ fprintf('done.\n');
 
 %% perform shifts
 fprintf('Performing frame shifts... '); 
+reg_data = data;
 for f = 1:num_frames
     imr_tform.T = tforms(:,:,f);
     for c = 1:nch
-        data(:,:,c,f) = imwarp(data(:,:,c,f),imr_tform,'OutputView',imref2d(size(template)));
+        reg_data(:,:,c,f) = imwarp(data(:,:,c,f),imr_tform,'OutputView',imref2d(size(template)));
     end
 end
 fprintf('done.\n');    
 
 
 %% save registered images
-if channel_options.save
+if ~isempty(channel_options.chsv)
     fprintf('Saving files... '); 
     savepath = fullfile(imagePathname,['MIMR ' imageFilename]);
     if ~(exist(savepath,'dir')==7)
@@ -201,9 +191,9 @@ if channel_options.save
     end
     %save template
     for c = channel_options.chsv
-        saveastiff(cast(mean(data(:,:,c,:),4),datatype),fullfile(savepath,['AVG_CH' num2str(c) '_' imageFilename ext]),opts_tiff);
-        saveastiff(cast(permute(data(:,:,c,:),[1 2 4 3]),datatype),fullfile(savepath,['CH' num2str(c) '_' imageFilename ext]),opts_tiff);
-%         saveastiff(cast(max(data(:,:,c,:),[],4),datatype),fullfile(savepath,['MAX_CH' num2str(c) '_' imageFilename ext]),opts_tiff);
+        saveastiff(cast(mean(reg_data(:,:,c,:),4),datatype),fullfile(savepath,['AVG_CH' num2str(c) '_' imageFilename ext]),opts_tiff);
+        saveastiff(cast(permute(reg_data(:,:,c,:),[1 2 4 3]),datatype),fullfile(savepath,['CH' num2str(c) '_' imageFilename ext]),opts_tiff);
+%         saveastiff(cast(max(reg_data(:,:,c,:),[],4),datatype),fullfile(savepath,['MAX_CH' num2str(c) '_' imageFilename ext]),opts_tiff);
     end
     saveastiff(cast(template,datatype),fullfile(savepath,['TEMPLATE_' imageFilename ext]),opts_tiff);
     fprintf('done.\n');    
