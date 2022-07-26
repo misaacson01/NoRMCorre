@@ -586,9 +586,9 @@ for it = 1:iter %loop for iterations
             if upd_template
                 cnt_buf = cnt_buf + 1;                
                 if strcmpi(method{2},'mean')
-                    new_temp = cellfun(@(x) nanmean(x,nd+1), buffer, 'UniformOutput',false);
+                    new_temp = cellfun(@(x) mean(x,nd+1,'omitnan'), buffer, 'UniformOutput',false);
                 elseif strcmpi(method{2},'median')
-                    new_temp = cellfun(@(x) nanmedian(x,nd+1), buffer, 'UniformOutput', false);
+                    new_temp = cellfun(@(x) median(x,nd+1,'omitnan'), buffer, 'UniformOutput', false);
                 end
                 if strcmpi(method{1},'mean')
                     cnt = t/bin_width + 1;
@@ -602,7 +602,7 @@ for it = 1:iter %loop for iterations
                         if nd == 2; buffer_med(:,:,buffer_width) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
                         if nd == 3; buffer_med(:,:,:,buffer_width) = cell2mat_ov(new_temp,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY); end
                     end
-                    template = mat2cell_ov(nanmedian(buffer_med,nd+1),xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY);
+                    template = mat2cell_ov(median(buffer_med,nd+1,'omitnan'),xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY);
                 end
                 fftTemp = cellfun(@fftn, template, 'un',0);
                 temp_mat = cell2mat_ov(template,xx_s,xx_f,yy_s,yy_f,zz_s,zz_f,overlap_pre,sizY);
