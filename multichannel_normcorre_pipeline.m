@@ -1,6 +1,6 @@
 %% register a multichannel image series, creating a new template
 %set primary image filename (used to create a template during motion correction)
-imageName = 'C:\Users\misaa\Desktop\07_15_22_Kailyn\071522_479576_256_spotE_airpuff2_014.tif';
+imageName = 'C:\Users\misaa\Desktop\7_25_Kailyn\072722_469574_airpuff2_004.tif';
 
 %settings for current image
 channel_options.nch = 4; %number of channels in the source file

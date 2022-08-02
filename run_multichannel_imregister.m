@@ -90,28 +90,45 @@ switch channel_options.pr
 end
 data_proj = permute(data_proj,[1 2 4 3]);
 
-%get mean of 1st N frames for initial template
-if num_frames<200
+%get mean of best matching frames of 1st N frames for initial template
+fprintf('Identifying initial template... ');
+if num_frames<num_template_frames
     num_template_frames = num_frames;
 end
 template_proj = data_proj(:,:,1:num_template_frames);
-template = mean(template_proj,3,'omitnan');
+%get correlation of all template frames to all template frames
+%to create an initial template
+template_cc = zeros(num_template_frames);
+for f = 1:(num_template_frames-1)
+    for f2 = (f+1):num_template_frames
+        template_cc(f,f2) = corr2(imgaussfilt(double(template_proj(:,:,f)),gauss_filt),imgaussfilt(double(template_proj(:,:,f2)),gauss_filt));
+    end
+end
+template_cc = template_cc + template_cc';
+[~,seed_frame] = max(sum(template_cc));
+seed_cc = template_cc(:,seed_frame);
+thresh = prctile(seed_cc,90);
+best_template_frames = find(seed_cc>=thresh);
+template = mean(template_proj(:,:,best_template_frames),3,'omitnan');
+fprintf('done.\n');  
 
-%register 1st N frames to create improve the initial template
-for f = 1:num_template_frames
-    str=['Registering first ' num2str(num_template_frames) ' frames to create an initial template... (' num2str(f) ')'];
+%register best template frames to seed frame to improve the initial template
+num_best_frames = length(best_template_frames);
+for f = 1:num_best_frames
+    cur_frame = best_template_frames(f);
+    str=['Registering ' num2str(num_best_frames) ' frames to improve the initial template... (' num2str(f) ')'];
     refreshdisp(str, prevstr, f);
     prevstr=str; 
-    imr_tform = imregtform(template_proj(:,:,f),template,'affine',optimizer,metric);
-    template_proj(:,:,f) = imwarp(template_proj(:,:,f),imr_tform,'OutputView',imref2d(size(template)));
+    imr_tform = imregtform(imgaussfilt(double(template_proj(:,:,cur_frame)),gauss_filt),imgaussfilt(double(template_proj(:,:,seed_frame)),gauss_filt),'affine',optimizer,metric);
+    template_proj(:,:,cur_frame) = imwarp(template_proj(:,:,f),imr_tform,'OutputView',imref2d(size(template)));
 end
-template = mean(template_proj,3,'omitnan');
-str=['Registering first ' num2str(num_template_frames) ' frames to create an initial template... done.\n'];
+template = mean(template_proj(:,:,[seed_frame; best_template_frames]),3,'omitnan');
+str=['Registering first ' num2str(num_best_frames) ' frames to improve the initial template... done.\n'];
 refreshdisp(str, prevstr, f); 
-reg_tforms = nan(3,3,num_frames);
 
 
 %% calculate shifts between all frames and the template
+reg_tforms = nan(3,3,num_frames);
 for f = 1:num_frames
     str=['Calculating ' num2str(num_frames) ' frame shifts... (' num2str(f) ')'];
     refreshdisp(str, prevstr, f);
