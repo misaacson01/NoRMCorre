@@ -12,11 +12,11 @@ function [status, templateName, out_tform] = run_multichannel_normcorre(varargin
 % Output:
 % status: text description of results (e.g. "success" or "bad template"
 % templateName = directory/filename of the template generated from motion correction
+% templateFrames = frames to use as template; integer # of frames or "manual" choice of frames (default = 200)
 % out_tform = transformation used to stabilize the frame
 %
 % example:
 % run_multichannel_normcorre('imageName','C:\image.tif','saveDir','C:\stabilized\','channel',2)
-
 %options for normcorre algorithm
 options.grid_size = [32,32];
 options.init_batch = 200;
@@ -56,9 +56,13 @@ if ~exist('channel_options','var')
     channel_options.chsh = [1 2 3 4]; %channels to use for registering shifts
     channel_options.pr = 'max'; %projection type to use across channels
     channel_options.save = true; %whether to save the registered images or not (false just returns the last transform)
+    channel_options.templateType = 'auto'; %whether to automatically or manually select frames to use as an initial template
 end
-if ~isfield('channel_options','save')
+if ~isfield(channel_options,'save')
     channel_options.save = true;
+end
+if ~isfield(channel_options,'templateType')
+    channel_options.templateType = 'auto';
 end
 
 %check validity of inputs

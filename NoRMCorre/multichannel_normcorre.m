@@ -29,6 +29,7 @@ nd = 2 + (options.d3 > 1); %max(length(sizY)-1,2);    % determine whether imagin
 nch = channel_options.nch; %# of channels
 chsh = channel_options.chsh; %channels for calculating shifts
 pr = channel_options.pr; %projection type for combining multiple "chsh" channels
+templateType = channel_options.templateType; %'auto' or 'manual' selection of initial template frames
 if ~channel_options.save
     options.output_type = 'nosave';
 end
@@ -152,9 +153,20 @@ Y_temp = permute(Y_temp,[1 2 4 3]);
 
 data_type = class(Y_temp);
 Y_temp = single(Y_temp);
+switch templateType
+    case 'auto'
+    case 'manual'
+        templateApp = templatePicker(Y_temp);
+        waitfor(templateApp,'editing','off');
+        Y_temp = templateApp.Y_temp_include;
+        init_batch = size(Y_temp,3);
+        templateApp.delete
+    otherwise
+        error('only "auto" or "manual" options for templateType are valid')
+end
 
 if nargin < 4 || isempty(template)
-    if print_msg; fprintf('Registering the first %i frames just to obtain a good template....',init_batch); end
+    if print_msg; fprintf('Registering %i frames just to obtain a good template....',init_batch); end
     template_in = median(Y_temp,nd+1)+add_value; %median projection to get starting template
     fftTemp = fftn(template_in); %fourier transform of template
     for t = 1:size(Y_temp,nd+1)

@@ -1,11 +1,12 @@
 %% register a multichannel image series, creating a new template
 %set primary image filename (used to create a template during motion correction)
-imageName = 'C:\Users\misaa\Desktop\7_25_Kailyn\072722_469574_airpuff2_004.tif';
+imageName = 'D:\SN Lab\Cortex Imaging\Testing\leftpaw_00001.tif';
 
 %settings for current image
 channel_options.nch = 4; %number of channels in the source file
 channel_options.chsh = [2 3 4]; %channels to use for registering shifts
 channel_options.pr = 'max'; %projection type to use across channels ('max' or 'mean')
+channel_options.templateType = 'auto'; %whether to automatically or manually select frames to use as an initial template
 
 %perform multichannel normcorre motion correction and create a new template
 [status, templateName, ~] = run_multichannel_normcorre('imageName',imageName,...
@@ -21,6 +22,7 @@ templateName = 'C:\Users\misaa\Desktop\22-01-14 4color amazing data\Visual Corte
 channel_options.nch = 4; %number of channels in the source file
 channel_options.chsh = [2 3 4]; %channels to use for registering shifts
 channel_options.pr = 'max'; %projection type to use across channels
+channel_options.templateType = 'auto'; %whether to automatically or manually select frames to use as an initial template
 
 %perform multichannel normcorre motion correction on each file
 for i = 1:length(imageNames)
@@ -63,6 +65,9 @@ channel_options.nch = 1;
 channel_options.chsh = 1;
 channel_options.pr = 'max';
 channel_options.save = false;
+channel_options.templateType = 'auto';
+
+
 [status, ~, nrm_tform] = run_multichannel_normcorre('imageName',template2Name_reg,...
         'channelOptions',channel_options,'templateName',template1Name);
 movingRegistered2 = imwarp(movingRegistered,nrm_tform,'cubic','FillValues',0);
