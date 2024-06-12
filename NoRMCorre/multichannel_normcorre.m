@@ -187,6 +187,8 @@ else
 end
 
 [d1,d2,d3,~] = size(Y_temp);
+options.d1 = d1;
+options.d2 = d2;
 if nd == 2; d3 = 1; end
 
 
