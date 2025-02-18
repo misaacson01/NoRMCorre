@@ -1,14 +1,13 @@
 ## Notes on this fork
 
-This is a fork of the NoRMCorre repo, intended to more easily fit into S-N Lab image processing pipelines. The "draw_ROIs" repo is required to work with some of these scripts.
+This is a fork of the NoRMCorre repo, intended to more easily fit into S-N Lab image processing pipelines and to add some additional features to the motion correction tool. The [draw_ROIs repo](https://github.com/sn-lab/draw_ROIs) may be required to work with some of these scripts.
 
-To just apply the NoRMCorre motion correction process to an image file, call the "run_normcorre" script from MATLAB with the full image filename and a save filename, like this:
-run_normcorre('imageName','c:\unstabilized.tif','saveDir','c:\stabilized.tif');
+To apply the basic NoRMCorre motion correction process with default settings to a scanimage .tif file, first identify whether the .tif file is single- or multi-channel. If it is single-channel, simply call the `run_normcorre` script from MATLAB with the full image filename and a save filename, like this:
+`run_normcorre('imageName','c:\unstabilized.tif','saveDir','c:\stabilized.tif')`
+If the .tif file is multichannel, include additional inputs to the function to specify the number of channels in the file and the channel you would like to correct, like this:
+`run_normcorre('imageName','c:\unstabilized.tif','saveDir','c:\stabilized.tif','channel',2,'num_channels',3)`
 
-To process ROIs in an unstabilized image file (or a series of files and/or folders of files), open the "snlab_image_processing.m" file in MATLAB and specify the filename(s) of the images to be processed as well as the image channel(s) (for 1-4 channel image series, output from scanimage) to process. (e.g. for processing gcamp imaging from snlab setup 3, channel 3 is ideal). This script will then run the following image processing pipeline:
-1) If multiple files and/or folders of files are included, they will be combined into a single file, only combining the specified image channels.
-2) The NoRMCorre script will be applied to the combined image file.
-3) The stabilized image file will be opened in the "draw_ROIs" tool (required dependency, available here: https://github.com/sn-lab/draw_ROIs). Using this GUI, draw polygons around all regions of interest, then save/exit when done. This tool will create files (.mat, .png, and/or .svg) of all ROIs drawn and timeseries of the mean brightness within each ROI. 
+In addition to the basic NoRMCorre function which stabilizes a single imaging channel, this repository also includes a `run_multichannel_normcorre` function which can use one or multiple channels to stabilize all channels in a multi-channel .tif file. This is accomplished by taking a projection of all channels that will be used to stabilize the image, creating a stable template based on that projection, and registering the multi-channel projection of each frame of the .tif file to that template. After shifts have been identified which best stabilize the projection to the template, those shifts are then individually applied to one or a number of channels in the multi-channel .tif file, so that all are stabilized similarly. This process can take advantage of the fact that some channels tend to prodce higher quality images, whereas other channels may can be more sparse or noisy which makes them difficult to stabilize. By apply the shifts gained from registering high-quality channels and applying those shifts to all channels, noisy channels can be registered just as well as the best channels. To perform multi-channel image registration, check the examples located in the `multichannel_normcorre_pipeline.m` script.
 
 
 ## Original readme for the NoRMCorre repo:
