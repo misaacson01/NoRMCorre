@@ -1,16 +1,23 @@
-## Notes on this fork
+# Notes on this fork
 
 This is a fork of the [NoRMCorre repo](https://github.com/flatironinstitute/NoRMCorre) developed by the Flatiron Institute, intended to more easily fit into S-N Lab image processing pipelines and to add some additional features to the motion correction tool. The [draw_ROIs repo](https://github.com/sn-lab/draw_ROIs) may be required to work with some of these scripts.
 
+### Basic .tif file registration with default settings
 To apply the basic NoRMCorre motion correction process with default settings to a scanimage .tif file, first identify whether the .tif file is single- or multi-channel. If it is single-channel, simply call the `run_normcorre` script from MATLAB with the full image filename and a save filename, like this:
 `run_normcorre('imageName','c:\unstabilized.tif','saveDir','c:\stabilized.tif')`
 If the .tif file is multichannel, include additional inputs to the function to specify the number of channels in the file and the channel you would like to correct, like this:
 `run_normcorre('imageName','c:\unstabilized.tif','saveDir','c:\stabilized.tif','channel',2,'num_channels',3)`
 
+### Registering multichannel .tif files
 In addition to the basic NoRMCorre function which stabilizes a single imaging channel, this repository also includes a `run_multichannel_normcorre` function which can use one or multiple channels to stabilize all channels in a multi-channel .tif file. This is accomplished by taking a projection of all channels that will be used to stabilize the image, creating a stable template based on that projection, and registering the multi-channel projection of each frame of the .tif file to that template. After shifts have been identified which best stabilize the projection to the template, those shifts are then individually applied to one or a number of channels in the multi-channel .tif file, so that all are stabilized similarly. This process can take advantage of the fact that some channels tend to prodce higher quality images, whereas other channels may can be more sparse or noisy which makes them difficult to stabilize. By apply the shifts gained from registering high-quality channels and applying those shifts to all channels, noisy channels can be registered just as well as the best channels. 
 
 To perform multi-channel image registration, check the examples located in the `multichannel_normcorre_pipeline.m` script.
 
+### Manually selecting stable frames to improve the initial template
+
+To perform motion correction of an image series, first you need a "template" to register each frame of the image series onto. A template could be generated simply by registering a subset of the frames of the image series together and taking the mean projection of this subset, though if the series has significant motion, the mean projection will be blurry and thus will not be a great template. A more modern solution to generating a template is to take a mean projection of a stabilized subset of frames that are well correlated to each other - this can exclude frames with significant motion artifacts. These highly correlated frames can be detected automatically, though this process can be slow. Alternatively, the user might want to manually select a number of frames where the tissue is in the desired stable position to generate the initial template
+
+When using the `multichannel_normcorre` function, the user can specify how a template should be created by using the `channel_options.templateType` setting. The `basic` will use the 1st 200 frames to create the template. The `auto` option will use 100+ higher correlating frames to use as the template. The `manual` option will open a GUI where the user can manually specify which of the 1st 200 frames should be used to create the template.
 
 
 ## Original readme for the NoRMCorre repo:
