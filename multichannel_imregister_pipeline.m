@@ -1,13 +1,13 @@
 
 
 %full filename of the multichannel .tif file to motion-correct
-imageName = 'C:\Users\misaa\Desktop\7_25_Kailyn\072722_469574_airpuff2_004.tif';
+imageName = 'D:\SN Lab\Spinal Cord\data\051424_550615_4xzm_Lside_run4_spotA_00001.tif';
 
 %settings for current image
-channel_options.nch = 4; %number of channels in the source file
-channel_options.chsh = [2 3]; %channels to use for calculating shifts (e.g. [2 3 4])
-channel_options.chrg = [2 3 4]; %channels to register (e.g. [2 3 4])
-channel_options.chsv = [1 2 3 4]; %channels to save (e.g. [1 2 3 4])
+channel_options.nch = 3; %number of channels in the source file
+channel_options.chsh = [2]; %channels to use for calculating shifts (e.g. [2 3 4])
+channel_options.chrg = [2]; %channels to register (e.g. [2 3 4])
+channel_options.chsv = [2]; %channels to save (e.g. [1 2 3 4])
 channel_options.pr = 'max'; %projection type to use across channels ('max' or 'mean')
 
 run_multichannel_imregister('imageName',imageName,'channelOptions',channel_options);

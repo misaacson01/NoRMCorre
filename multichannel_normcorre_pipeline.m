@@ -1,16 +1,15 @@
 %% register a multichannel image series, creating a new template
 %set primary image filename (used to create a template during motion correction)
-imageName = 'D:\SN Lab\Cortex Imaging\Testing\leftpaw_00001.tif';
+imageName = 'D:\SN Lab\Gut\Anatomical Imaging\dataset 2\241121_stomach_25x_2zoom_233um_12mv_00001.tif';
 
 %settings for current image
-channel_options.nch = 4; %number of channels in the source file
-channel_options.chsh = [2 3 4]; %channels to use for registering shifts
+channel_options.nch = 2; %number of channels in the source file
+channel_options.chsh = [1]; %channels to use for registering shifts
 channel_options.pr = 'max'; %projection type to use across channels ('max' or 'mean')
-channel_options.templateType = 'auto'; %whether to automatically or manually select frames to use as an initial template
+channel_options.templateType = 'manual'; %how to create a template ('basic': use 1st 200 frames; `manual`: manually select frames; `auto`: automatically detect correlating frames)
 
 %perform multichannel normcorre motion correction and create a new template
-[status, templateName, ~] = run_multichannel_normcorre('imageName',imageName,...
-    'channelOptions',channel_options);
+[status, templateName, ~] = run_multichannel_normcorre('imageName',imageName,'channelOptions',channel_options);
 
 
 %% register additional multichannel image series to the generated template

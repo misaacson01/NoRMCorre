@@ -154,19 +154,39 @@ Y_temp = permute(Y_temp,[1 2 4 3]);
 data_type = class(Y_temp);
 Y_temp = single(Y_temp);
 switch templateType
+    case 'basic'
     case 'auto'
+        %find frames which are well correlated to each other
+        if print_msg; fprintf('Finding correlated frames to use for an intial template...'); end
+        corr_matrix = ones(size(Y_temp,3));
+        for frame1 = 1:(size(Y_temp,3)-1)
+            for frame2 = (frame1+1):size(Y_temp,3)
+                cur_corr = corr2(Y_temp(:,:,frame1),Y_temp(:,:,frame2));
+                corr_matrix(frame1,frame2) = cur_corr;
+                corr_matrix(frame2,frame1) = cur_corr;
+            end
+        end
+        % find best frame1
+        med_corr = median(corr_matrix,'all','omitnan'); %get median correlation
+        tophalf_matrix = corr_matrix>med_corr; %get all correlations above median
+        [~, best_frame1] = max(sum(tophalf_matrix,'omitnan')); %find frame with greatest number of correlating frames
+        best_frames = find(corr_matrix(best_frame1,:)>med_corr); %get all frames highly correlating with this frame (including itself)
+        Y_temp = T_temp(:,:,best_frames);
+        init_batch = size(Y_temp,3);
+        if print_msg; fprintf(' done. \n'); end
     case 'manual'
+        %open a GUI allowing the user to manually 
         templateApp = templatePicker(Y_temp);
         waitfor(templateApp,'editing','off');
         Y_temp = templateApp.Y_temp_include;
         init_batch = size(Y_temp,3);
         templateApp.delete
     otherwise
-        error('only "auto" or "manual" options for templateType are valid')
+        error('only "basic", "auto" or "manual" options for templateType are valid')
 end
 
 if nargin < 4 || isempty(template)
-    if print_msg; fprintf('Registering %i frames just to obtain a good template....',init_batch); end
+    if print_msg; fprintf('Registering %i frames just to obtain a good template...',init_batch); end
     template_in = median(Y_temp,nd+1)+add_value; %median projection to get starting template
     fftTemp = fftn(template_in); %fourier transform of template
     for t = 1:size(Y_temp,nd+1)
@@ -181,7 +201,7 @@ if nargin < 4 || isempty(template)
         template_in = template_in*(t-1)/t + M_temp/t;
     end
     template_in = template_in + add_value;
-    if print_msg; fprintf('..done. \n'); end
+    if print_msg; fprintf(' done. \n'); end
 else
     template_in = single(template + add_value);
 end
